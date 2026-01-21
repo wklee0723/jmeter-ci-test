@@ -1,0 +1,51 @@
+name: QA Performance Test with JMeter CLI
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main" ]
+  # 수동 실행 트리거 추가
+  workflow_dispatch: 
+
+jobs:
+  performance-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Node.js 설정 (json-server 실행용)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # 3. json-server 설치 및 실행
+      - name: Start json-server
+        run: |
+          npm install -g json-server
+          # 파일 경로가 src/backend/ 밑에 있으므로 경로 확인 필수
+          json-server --watch ./src/backend/db-pika.json --port 3333 --cors & 
+          sleep 5 
+
+      # 4. JMeter 설치
+      - name: Install JMeter
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jmeter
+
+      # 5. JMeter CLI 실행
+      - name: Run JMeter Performance Test
+        run: |
+          jmeter -n -t ./test_plan.jmx -l ./result.jtl -e -o ./dashboard_report
+
+      # 6. HTML 리포트 결과 저장
+      - name: Upload JMeter Report
+        uses: actions/upload-artifact@v4
+        if: always() 
+        with:
+          name: jmeter-performance-report
+          path: ./dashboard_report/
