@@ -58,4 +58,3 @@ def test_comment_schema_integrity():
         # 데이터 타입 확인
         assert isinstance(comment["postId"], int)
         assert isinstance(comment["email"], str)
-        
